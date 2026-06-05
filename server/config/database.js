@@ -1,117 +1,277 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const { Pool } = require('pg');
 
-const dbPath = path.join(__dirname, '..', 'greengaps.db');
+let db;
+let pool;
+const isProduction = !!process.env.DATABASE_URL;
 
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Error opening database:', err.message);
-  } else {
-    console.log('Connected to SQLite database');
-  }
-});
+if (isProduction) {
+  // PostgreSQL on Render
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
 
-db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    full_name TEXT,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    phone TEXT,
-    profile_picture TEXT,
-    role TEXT DEFAULT 'user',
-    email_notifications INTEGER DEFAULT 1,
-    status_notifications INTEGER DEFAULT 1,
-    weekly_digest INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`);
+  const initPostgres = async () => {
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS users (
+          id SERIAL PRIMARY KEY,
+          full_name TEXT,
+          email TEXT UNIQUE NOT NULL,
+          password TEXT NOT NULL,
+          phone TEXT,
+          profile_picture TEXT,
+          role TEXT DEFAULT 'user',
+          email_notifications INTEGER DEFAULT 1,
+          status_notifications INTEGER DEFAULT 1,
+          weekly_digest INTEGER DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS reports (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          infrastructure_type TEXT NOT NULL,
+          location TEXT NOT NULL,
+          latitude REAL NOT NULL,
+          longitude REAL NOT NULL,
+          priority TEXT NOT NULL,
+          description TEXT NOT NULL,
+          status TEXT DEFAULT 'Open',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS status_updates (
+          id SERIAL PRIMARY KEY,
+          report_id INTEGER NOT NULL,
+          status TEXT NOT NULL,
+          comment TEXT,
+          updated_by TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (report_id) REFERENCES reports(id)
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS notifications (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          message TEXT NOT NULL,
+          is_read INTEGER DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS forum_posts (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          content TEXT NOT NULL,
+          category TEXT DEFAULT 'General',
+          images_icon TEXT,
+          is_pinned BOOLEAN DEFAULT false,
+          is_locked BOOLEAN DEFAULT false,
+          is_flagged BOOLEAN DEFAULT false,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS forum_replies (
+          id SERIAL PRIMARY KEY,
+          post_id INTEGER NOT NULL,
+          user_id INTEGER NOT NULL,
+          content TEXT NOT NULL,
+          images_icon TEXT,
+          is_flagged BOOLEAN DEFAULT false,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (post_id) REFERENCES forum_posts(id),
+          FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS password_reset_tokens (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          token TEXT NOT NULL,
+          expires_at TIMESTAMP NOT NULL,
+          used INTEGER DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS report_photos (
+          id SERIAL PRIMARY KEY,
+          report_id INTEGER NOT NULL,
+          filename TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (report_id) REFERENCES reports(id)
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS forum_poll_votes (
+          id SERIAL PRIMARY KEY,
+          post_id INTEGER NOT NULL,
+          user_id INTEGER NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(post_id, user_id),
+          FOREIGN KEY (post_id) REFERENCES forum_posts(id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS report_upvotes (
+          id SERIAL PRIMARY KEY,
+          report_id INTEGER NOT NULL,
+          user_id INTEGER NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(report_id, user_id),
+          FOREIGN KEY (report_id) REFERENCES reports(id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS post_reactions (
+          id SERIAL PRIMARY KEY,
+          post_id INTEGER NOT NULL,
+          user_id INTEGER NOT NULL,
+          reaction TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(post_id, user_id, reaction),
+          FOREIGN KEY (post_id) REFERENCES forum_posts(id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS reply_reactions (
+          id SERIAL PRIMARY KEY,
+          reply_id INTEGER NOT NULL,
+          user_id INTEGER NOT NULL,
+          reaction TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(reply_id, user_id, reaction),
+          FOREIGN KEY (reply_id) REFERENCES forum_replies(id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      console.log('PostgreSQL tables created successfully');
+    } catch (err) {
+      console.error('Error creating PostgreSQL tables:', err);
+    }
+  };
 
-  db.run(`ALTER TABLE users ADD COLUMN profile_picture TEXT`, () => {});
-  db.run(`ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'`, () => {});
+  initPostgres();
+  module.exports = { pool, isProduction };
 
-  db.run(`CREATE TABLE IF NOT EXISTS reports (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    infrastructure_type TEXT NOT NULL,
-    location TEXT NOT NULL,
-    latitude REAL NOT NULL,
-    longitude REAL NOT NULL,
-    priority TEXT NOT NULL,
-    description TEXT NOT NULL,
-    status TEXT DEFAULT 'Open',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-  )`);
+} else {
+  // SQLite locally
+  const dbPath = path.join(__dirname, '..', 'greengaps.db');
+  db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+      console.error('Error opening database:', err.message);
+    } else {
+      console.log('Connected to SQLite database');
+    }
+  });
 
-  db.run(`CREATE TABLE IF NOT EXISTS status_updates (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    report_id INTEGER NOT NULL,
-    status TEXT NOT NULL,
-    comment TEXT,
-    updated_by TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (report_id) REFERENCES reports(id)
-  )`);
+  db.serialize(() => {
+    db.run(`CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      full_name TEXT,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      phone TEXT,
+      profile_picture TEXT,
+      role TEXT DEFAULT 'user',
+      email_notifications INTEGER DEFAULT 1,
+      status_notifications INTEGER DEFAULT 1,
+      weekly_digest INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+    db.run(`ALTER TABLE users ADD COLUMN profile_picture TEXT`, () => {});
+    db.run(`ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'`, () => {});
+    db.run(`CREATE TABLE IF NOT EXISTS reports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      infrastructure_type TEXT NOT NULL,
+      location TEXT NOT NULL,
+      latitude REAL NOT NULL,
+      longitude REAL NOT NULL,
+      priority TEXT NOT NULL,
+      description TEXT NOT NULL,
+      status TEXT DEFAULT 'Open',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS status_updates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      report_id INTEGER NOT NULL,
+      status TEXT NOT NULL,
+      comment TEXT,
+      updated_by TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (report_id) REFERENCES reports(id)
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      is_read INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS forum_posts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      category TEXT DEFAULT 'General',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS forum_replies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      post_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (post_id) REFERENCES forum_posts(id),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      token TEXT NOT NULL,
+      expires_at DATETIME NOT NULL,
+      used INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS report_photos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      report_id INTEGER NOT NULL,
+      filename TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (report_id) REFERENCES reports(id)
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS forum_poll_votes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      post_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(post_id, user_id),
+      FOREIGN KEY (post_id) REFERENCES forum_posts(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+  });
 
-  db.run(`CREATE TABLE IF NOT EXISTS notifications (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    message TEXT NOT NULL,
-    is_read INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-  )`);
-
-  db.run(`CREATE TABLE IF NOT EXISTS forum_posts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    content TEXT NOT NULL,
-    category TEXT DEFAULT 'General',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-  )`);
-
-  db.run(`CREATE TABLE IF NOT EXISTS forum_replies (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    post_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
-    content TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (post_id) REFERENCES forum_posts(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
-  )`);
-
-  db.run(`CREATE TABLE IF NOT EXISTS password_reset_tokens (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  token TEXT NOT NULL,
-  expires_at DATETIME NOT NULL,
-  used INTEGER DEFAULT 0,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id)
-)`);
-
-db.run(`CREATE TABLE IF NOT EXISTS report_photos (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  report_id INTEGER NOT NULL,
-  filename TEXT NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (report_id) REFERENCES reports(id)
-)`);
-});
-
-db.run(`
-  CREATE TABLE IF NOT EXISTS forum_poll_votes (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    post_id    INTEGER NOT NULL,
-    user_id    INTEGER NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(post_id, user_id),
-    FOREIGN KEY (post_id) REFERENCES forum_posts(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  )
-`);
-
-module.exports = db;
+  module.exports = { db, isProduction };
+}
