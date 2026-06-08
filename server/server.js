@@ -52,18 +52,6 @@ const runMigrations = async () => {
 };
 runMigrations();
 
-app.get('/api/make-admin/:email', async (req, res) => {
-  if (process.env.DATABASE_URL) {
-    const { pool } = require('./config/database');
-    try {
-      await pool.query("UPDATE users SET role = 'admin' WHERE email = $1", [req.params.email]);
-      res.json({ message: 'Done! User is now admin.' });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-  }
-});
-
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
