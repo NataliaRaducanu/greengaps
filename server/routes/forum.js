@@ -160,7 +160,8 @@ router.get('/:id', async (req, res) => {
     }
 
     const replyIds = replies.map(r => r.id);
-    const placeholders = replyIds.map((_, i) => isProduction ? `$${i + 1}` : '?').join(',');
+    // Always use ? placeholders — dbAll handles conversion to $1,$2... for PostgreSQL
+    const placeholders = replyIds.map(() => '?').join(',');
 
     const replyReactions = await dbAll(
       `SELECT reply_id, reaction, COUNT(*) as count FROM forum_reactions WHERE reply_id IN (${placeholders}) GROUP BY reply_id, reaction`,
