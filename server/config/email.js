@@ -1,22 +1,13 @@
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: 'nataliaraducanu10@gmail.com',
-    pass: 'tvsrpnovurwqzbvv',
-  },
-  debug: true,
-  logger: true,
-});
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
+const FROM_EMAIL = process.env.FROM_EMAIL || 'nataliaraducanu10@gmail.com';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 const sendPasswordResetEmail = async (email, resetLink) => {
-  const info = await transporter.sendMail({
-    from: '"GreenGaps" <nataliaraducanu10@gmail.com>',
+  await sgMail.send({
+    from: { name: 'GreenGaps', email: FROM_EMAIL },
     to: email,
     subject: 'Reset Your GreenGaps Password',
     html: `
@@ -40,7 +31,7 @@ const sendPasswordResetEmail = async (email, resetLink) => {
       </div>
     `,
   });
-  console.log('Password reset email sent:', info.messageId);
+  console.log('✅ Password reset email sent to', email);
 };
 
 const sendStatusUpdateEmail = async (email, fullName, reportLocation, status, comment) => {
@@ -59,8 +50,8 @@ const sendStatusUpdateEmail = async (email, fullName, reportLocation, status, co
   const color = statusColor[status] || '#555';
   const displayStatus = formatStatus(status);
 
-  const info = await transporter.sendMail({
-    from: '"GreenGaps" <nataliaraducanu10@gmail.com>',
+  await sgMail.send({
+    from: { name: 'GreenGaps', email: FROM_EMAIL },
     to: email,
     subject: `Your GreenGaps Report Has Been Updated — ${displayStatus}`,
     html: `
@@ -94,12 +85,12 @@ const sendStatusUpdateEmail = async (email, fullName, reportLocation, status, co
       </div>
     `,
   });
-  console.log('Status update email sent:', info.messageId);
+  console.log('✅ Status update email sent to', email);
 };
 
 const sendForumReplyEmail = async (email, fullName, postTitle, replierName, replyContent, postId) => {
-  const info = await transporter.sendMail({
-    from: '"GreenGaps" <nataliaraducanu10@gmail.com>',
+  await sgMail.send({
+    from: { name: 'GreenGaps', email: FROM_EMAIL },
     to: email,
     subject: `💬 New reply on your GreenGaps post: "${postTitle}"`,
     html: `
@@ -126,21 +117,18 @@ const sendForumReplyEmail = async (email, fullName, postTitle, replierName, repl
               View Discussion
             </a>
           </div>
-          <p style="color: #888; font-size: 13px; text-align: center;">
-            You're receiving this because you started this discussion on GreenGaps.
-          </p>
           <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
           <p style="color: #aaa; font-size: 12px; text-align: center;">GreenGaps — Birmingham Cycling Infrastructure</p>
         </div>
       </div>
     `,
   });
-  console.log('✅ Forum reply email sent to', email, ':', info.messageId);
+  console.log('✅ Forum reply email sent to', email);
 };
 
 const sendBroadcastEmail = async (email, fullName, subject, message) => {
-  const info = await transporter.sendMail({
-    from: '"GreenGaps" <nataliaraducanu10@gmail.com>',
+  await sgMail.send({
+    from: { name: 'GreenGaps', email: FROM_EMAIL },
     to: email,
     subject: `📢 ${subject}`,
     html: `
@@ -169,7 +157,7 @@ const sendBroadcastEmail = async (email, fullName, subject, message) => {
       </div>
     `,
   });
-  console.log('✅ Broadcast email sent to', email, ':', info.messageId);
+  console.log('✅ Broadcast email sent to', email);
 };
 
 module.exports = { sendPasswordResetEmail, sendStatusUpdateEmail, sendForumReplyEmail, sendBroadcastEmail };
