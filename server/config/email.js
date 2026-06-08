@@ -10,6 +10,8 @@ const transporter = nodemailer.createTransport({
   logger: true,
 });
 
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
 const sendPasswordResetEmail = async (email, resetLink) => {
   const info = await transporter.sendMail({
     from: '"GreenGaps" <nataliaraducanu10@gmail.com>',
@@ -80,7 +82,7 @@ const sendStatusUpdateEmail = async (email, fullName, reportLocation, status, co
           </div>
           ` : ''}
           <div style="text-align: center; margin: 32px 0;">
-            <a href="http://localhost:3000/my-reports" style="background: #2d7a4f; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+            <a href="${FRONTEND_URL}/my-reports" style="background: #2d7a4f; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
               View My Reports
             </a>
           </div>
@@ -118,7 +120,7 @@ const sendForumReplyEmail = async (email, fullName, postTitle, replierName, repl
             </p>
           </div>
           <div style="text-align: center; margin: 32px 0;">
-            <a href="http://localhost:3000/forum/${postId}" style="background: #2d7a4f; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+            <a href="${FRONTEND_URL}/forum/${postId}" style="background: #2d7a4f; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
               View Discussion
             </a>
           </div>
@@ -152,7 +154,7 @@ const sendBroadcastEmail = async (email, fullName, subject, message) => {
             <p style="margin: 0; color: #333; line-height: 1.7; white-space: pre-wrap;">${message}</p>
           </div>
           <div style="text-align: center; margin: 32px 0;">
-            <a href="http://localhost:3000" style="background: #2d7a4f; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+            <a href="${FRONTEND_URL}" style="background: #2d7a4f; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
               Visit GreenGaps
             </a>
           </div>
