@@ -10,8 +10,8 @@ import {
 } from 'react-icons/md';
 import './ForumPost.css';
 
-const API = 'http://localhost:5000/api';
-const BASE = 'http://localhost:5000';
+const API = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const BASE = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace('/api', '');
 
 const timeAgo = (dateStr) => {
   const diff = Math.floor((new Date() - new Date(dateStr)) / 1000);
