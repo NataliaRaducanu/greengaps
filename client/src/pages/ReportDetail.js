@@ -163,7 +163,7 @@ const ReportDetail = () => {
                       onClick={() => setLightboxPhoto(photo.filename)}
                     >
                       <img
-                        src={`http://localhost:5000${photo.filename}`}
+                        src={`(process.env.REACT_APP_API_URL || 'http://localhost:5000')${photo.filename}`}
                         alt={`Report ${i + 1}`}
                       />
                     </div>
@@ -277,7 +277,7 @@ const ReportDetail = () => {
         <div className="photo-lightbox" onClick={() => setLightboxPhoto(null)}>
           <button className="lightbox-close" onClick={() => setLightboxPhoto(null)}>✕</button>
           <img
-            src={`http://localhost:5000${lightboxPhoto}`}
+            src={`(process.env.REACT_APP_API_URL || 'http://localhost:5000')${lightboxPhoto}`}
             alt="Full size"
             onClick={e => e.stopPropagation()}
           />

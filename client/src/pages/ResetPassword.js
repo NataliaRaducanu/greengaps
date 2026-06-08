@@ -16,7 +16,7 @@ const ResetPassword = () => {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    axios.get(`http://localhost:5000/api/auth/reset-password/${token}`)
+    axios.get(`(process.env.REACT_APP_API_URL || '(process.env.REACT_APP_API_URL || 'http://localhost:5000')')/api/auth/reset-password/${token}`)
       .then(() => setTokenValid(true))
       .catch(() => setTokenValid(false))
       .finally(() => setValidating(false));
@@ -37,7 +37,7 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      await axios.post('http://localhost:5000/api/auth/reset-password', { token, password });
+      await axios.post('(process.env.REACT_APP_API_URL || '(process.env.REACT_APP_API_URL || 'http://localhost:5000')')/api/auth/reset-password', { token, password });
       setSuccess(true);
       setTimeout(() => navigate('/login'), 3000);
     } catch (err) {

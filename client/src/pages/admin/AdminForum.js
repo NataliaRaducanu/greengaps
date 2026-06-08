@@ -6,7 +6,7 @@ import {
   MdClose, MdPerson, MdAccessTime, MdVisibility
 } from 'react-icons/md';
 
-const API = 'http://localhost:5000/api';
+const API = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const timeAgo = (dateStr) => {
   const diff = Math.floor((new Date() - new Date(dateStr)) / 1000);

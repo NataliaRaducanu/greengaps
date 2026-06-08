@@ -127,7 +127,7 @@ const ProfileSettings = () => {
           >
             {profile?.profile_picture ? (
               <img
-                src={`http://localhost:5000${profile.profile_picture}`}
+                src={`(process.env.REACT_APP_API_URL || 'http://localhost:5000')${profile.profile_picture}`}
                 alt="Profile"
                 style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover' }}
               />
