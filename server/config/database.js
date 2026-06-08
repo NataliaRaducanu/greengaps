@@ -1,4 +1,4 @@
-const sqlite3 = require('sqlite3').verbose();
+const sqlite3 = !process.env.DATABASE_URL ? require('sqlite3').verbose() : null;
 const path = require('path');
 const { Pool } = require('pg');
 
