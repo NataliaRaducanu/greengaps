@@ -74,6 +74,7 @@ if (isProduction) {
           title TEXT NOT NULL,
           content TEXT NOT NULL,
           category TEXT DEFAULT 'General',
+          images TEXT,
           images_icon TEXT,
           is_pinned BOOLEAN DEFAULT false,
           is_locked BOOLEAN DEFAULT false,
@@ -88,6 +89,7 @@ if (isProduction) {
           post_id INTEGER NOT NULL,
           user_id INTEGER NOT NULL,
           content TEXT NOT NULL,
+          images TEXT,
           images_icon TEXT,
           is_flagged BOOLEAN DEFAULT false,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -158,6 +160,17 @@ if (isProduction) {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           UNIQUE(reply_id, user_id, reaction),
           FOREIGN KEY (reply_id) REFERENCES forum_replies(id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS forum_reactions (
+          id SERIAL PRIMARY KEY,
+          post_id INTEGER,
+          reply_id INTEGER,
+          user_id INTEGER NOT NULL,
+          reaction TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
       `);
@@ -234,6 +247,7 @@ if (isProduction) {
       title TEXT NOT NULL,
       content TEXT NOT NULL,
       category TEXT DEFAULT 'General',
+      images TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id)
     )`);
@@ -242,6 +256,7 @@ if (isProduction) {
       post_id INTEGER NOT NULL,
       user_id INTEGER NOT NULL,
       content TEXT NOT NULL,
+      images TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (post_id) REFERENCES forum_posts(id),
       FOREIGN KEY (user_id) REFERENCES users(id)
@@ -269,6 +284,15 @@ if (isProduction) {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(post_id, user_id),
       FOREIGN KEY (post_id) REFERENCES forum_posts(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+    db.run(`CREATE TABLE IF NOT EXISTS forum_reactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      post_id INTEGER,
+      reply_id INTEGER,
+      user_id INTEGER NOT NULL,
+      reaction TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )`);
   });
