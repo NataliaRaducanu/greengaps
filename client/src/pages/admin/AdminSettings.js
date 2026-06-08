@@ -67,12 +67,14 @@ const AdminSettings = () => {
   const [forumPosts, setForumPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
 
+  const API = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
   // Fetch forum posts when "specific_post" audience is selected
   useEffect(() => {
     if (broadcast.audience === 'specific_post' && forumPosts.length === 0) {
       setLoadingPosts(true);
       const token = localStorage.getItem('token');
-      fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/admin/forum`, {
+      fetch(`${API}/admin/forum`, {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(r => r.json())
@@ -103,7 +105,7 @@ const AdminSettings = () => {
     setBroadcastResult('');
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/admin/broadcast`, {
+      const res = await fetch(`${API}/admin/broadcast`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -223,7 +225,6 @@ const AdminSettings = () => {
                           <option value="event_rsvp">Event RSVP'd users</option>
                         </optgroup>
                       </select>
-                      {/* Audience description */}
                       <p style={{ fontSize: '12px', color: '#888', marginTop: '6px' }}>
                         {audienceDescriptions[broadcast.audience]}
                       </p>
