@@ -35,6 +35,54 @@ const AdminAnalytics = () => {
     ? Math.round((stats.stats.resolved / stats.stats.total_reports) * 100)
     : 0;
 
+  const handleExport = () => {
+    const rows = [];
+
+    // Summary stats
+    rows.push(['GreenGaps Analytics Export']);
+    rows.push(['Generated', new Date().toLocaleString()]);
+    rows.push([]);
+    rows.push(['--- SUMMARY ---']);
+    rows.push(['Total Reports', stats?.stats?.total_reports || 0]);
+    rows.push(['Resolution Rate', `${resolutionRate}%`]);
+    rows.push(['Total Users', stats?.users?.total_users || 0]);
+    rows.push(['Pending Review', stats?.stats?.pending || 0]);
+    rows.push([]);
+
+    // Infrastructure types
+    rows.push(['--- INFRASTRUCTURE TYPES ---']);
+    rows.push(['Type', 'Count', 'Percentage']);
+    analytics?.types?.forEach(t => {
+      rows.push([t.infrastructure_type, t.count, `${Math.round((t.count / totalTypes) * 100)}%`]);
+    });
+    rows.push([]);
+
+    // Monthly trends
+    rows.push(['--- MONTHLY TRENDS ---']);
+    rows.push(['Month', 'Reports']);
+    analytics?.monthly?.forEach(m => {
+      rows.push([m.month, m.count]);
+    });
+    rows.push([]);
+
+    // Top locations
+    rows.push(['--- TOP LOCATIONS ---']);
+    rows.push(['Rank', 'Location', 'Reports']);
+    analytics?.locations?.forEach((loc, i) => {
+      rows.push([i + 1, loc.location, loc.count]);
+    });
+
+    // Convert to CSV
+    const csv = rows.map(r => r.map(cell => `"${cell}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `greengaps-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
@@ -68,7 +116,7 @@ const AdminAnalytics = () => {
           <h1>Analytics & Insights</h1>
           <div className="admin-analytics-header-actions">
             <button className="admin-analytics-filter-btn">Last 30 Days</button>
-            <button className="admin-analytics-export-btn">Export</button>
+            <button className="admin-analytics-export-btn" onClick={handleExport}>Export</button>
           </div>
         </div>
 
