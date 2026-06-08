@@ -29,6 +29,29 @@ app.get('/', (req, res) => {
   res.json({ message: 'GreenGaps API is running!' });
 });
 
+// Run migrations
+const runMigrations = async () => {
+  if (process.env.DATABASE_URL) {
+    const { pool } = require('./config/database');
+    try {
+      await pool.query('ALTER TABLE forum_posts ADD COLUMN IF NOT EXISTS images TEXT');
+      await pool.query('ALTER TABLE forum_replies ADD COLUMN IF NOT EXISTS images TEXT');
+      await pool.query(`CREATE TABLE IF NOT EXISTS forum_reactions (
+        id SERIAL PRIMARY KEY,
+        post_id INTEGER,
+        reply_id INTEGER,
+        user_id INTEGER NOT NULL,
+        reaction TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`);
+      console.log('Migrations completed');
+    } catch (err) {
+      console.error('Migration error:', err.message);
+    }
+  }
+};
+runMigrations();
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
