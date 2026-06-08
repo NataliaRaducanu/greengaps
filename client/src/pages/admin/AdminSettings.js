@@ -72,7 +72,7 @@ const AdminSettings = () => {
     if (broadcast.audience === 'specific_post' && forumPosts.length === 0) {
       setLoadingPosts(true);
       const token = localStorage.getItem('token');
-      fetch('(process.env.REACT_APP_API_URL || 'http://localhost:5000/api')/admin/forum', {
+      fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/admin/forum`, {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(r => r.json())
@@ -103,7 +103,7 @@ const AdminSettings = () => {
     setBroadcastResult('');
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('(process.env.REACT_APP_API_URL || 'http://localhost:5000/api')/admin/broadcast', {
+      const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/admin/broadcast`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
