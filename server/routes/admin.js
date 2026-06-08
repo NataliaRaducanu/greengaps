@@ -328,23 +328,24 @@ router.get('/forum', adminAuth, async (req, res) => {
 // Get flagged content
 router.get('/forum/flagged', adminAuth, async (req, res) => {
   try {
+    const flaggedVal = isProduction ? true : 1;
     const posts = await dbAll(`
       SELECT fp.*, u.full_name, u.email, COUNT(fr.id) as reply_count
       FROM forum_posts fp
       JOIN users u ON fp.user_id = u.id
       LEFT JOIN forum_replies fr ON fr.post_id = fp.id
-      WHERE fp.is_flagged = 1
+      WHERE fp.is_flagged = ?
       GROUP BY fp.id, u.full_name, u.email
       ORDER BY fp.created_at DESC
-    `, []);
+    `, [flaggedVal]);
     const replies = await dbAll(`
       SELECT fr.*, u.full_name, u.email, fp.title as post_title
       FROM forum_replies fr
       JOIN users u ON fr.user_id = u.id
       JOIN forum_posts fp ON fr.post_id = fp.id
-      WHERE fr.is_flagged = 1
+      WHERE fr.is_flagged = ?
       ORDER BY fr.created_at DESC
-    `, []);
+    `, [flaggedVal]);
     res.json({ posts, replies });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -377,7 +378,7 @@ router.put('/forum/:id/lock', adminAuth, async (req, res) => {
   try {
     const post = await dbGet('SELECT is_locked FROM forum_posts WHERE id = ?', [req.params.id]);
     if (!post) return res.status(404).json({ error: 'Post not found' });
-    const newVal = post.is_locked ? 0 : 1;
+    const newVal = post.is_locked ? false : true;
     await dbRun('UPDATE forum_posts SET is_locked = ? WHERE id = ?', [newVal, req.params.id]);
     res.json({ is_locked: newVal, message: newVal ? 'Thread locked' : 'Thread unlocked' });
   } catch (err) {
@@ -390,7 +391,7 @@ router.put('/forum/:id/pin', adminAuth, async (req, res) => {
   try {
     const post = await dbGet('SELECT is_pinned FROM forum_posts WHERE id = ?', [req.params.id]);
     if (!post) return res.status(404).json({ error: 'Post not found' });
-    const newVal = post.is_pinned ? 0 : 1;
+    const newVal = post.is_pinned ? false : true;
     await dbRun('UPDATE forum_posts SET is_pinned = ? WHERE id = ?', [newVal, req.params.id]);
     res.json({ is_pinned: newVal, message: newVal ? 'Thread pinned' : 'Thread unpinned' });
   } catch (err) {
@@ -401,7 +402,7 @@ router.put('/forum/:id/pin', adminAuth, async (req, res) => {
 // Unflag post
 router.put('/forum/:id/unflag', adminAuth, async (req, res) => {
   try {
-    await dbRun('UPDATE forum_posts SET is_flagged = 0 WHERE id = ?', [req.params.id]);
+    await dbRun('UPDATE forum_posts SET is_flagged = false WHERE id = ?', [req.params.id]);
     res.json({ message: 'Flag cleared' });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -411,7 +412,7 @@ router.put('/forum/:id/unflag', adminAuth, async (req, res) => {
 // Unflag reply
 router.put('/forum/:postId/replies/:replyId/unflag', adminAuth, async (req, res) => {
   try {
-    await dbRun('UPDATE forum_replies SET is_flagged = 0 WHERE id = ?', [req.params.replyId]);
+    await dbRun('UPDATE forum_replies SET is_flagged = false WHERE id = ?', [req.params.replyId]);
     res.json({ message: 'Flag cleared' });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
