@@ -11,7 +11,7 @@ import {
 import './Forum.css';
 
 const categories = ['General', 'Routes', 'Safety', 'Infrastructure', 'Events', 'Tips', 'Other'];
-const API = 'http://localhost:5000/api';
+const API = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const timeAgo = (dateStr) => {
   const diff = Math.floor((new Date() - new Date(dateStr)) / 1000);
