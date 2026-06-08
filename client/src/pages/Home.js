@@ -4,7 +4,7 @@ import { MdDirectionsBike, MdMap, MdAddCircleOutline, MdBarChart, MdPeople } fro
 import { getAllReports } from '../services/api';
 import './Home.css';
 
-const API = 'http://localhost:5000/api';
+const API = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const Home = () => {
   const [reports, setReports] = useState([]);
