@@ -1,4 +1,5 @@
-# GreenGaps
+Here's the full updated README with the running instructions added:
+markdown# GreenGaps
 ### A Web-Based Geospatial Decision-Support System for Urban Cycling Infrastructure
 
 GreenGaps is a full-stack web application developed as a final-year BSc Computing dissertation project at Southampton Solent University.
@@ -17,11 +18,66 @@ The platform enables cyclists and community members to:
 
 ---
 
-## Live Application
+## Running the Application
 
-🌐 **Frontend:** https://greengaps.vercel.app
+There are two ways to access GreenGaps:
+
+---
+
+### Option 1 — Live Deployment (No Setup Required)
+
+Visit the deployed application directly at: https://greengaps.vercel.app
 
 > **Note:** The backend is hosted on Render's free tier. After periods of inactivity, the first request may take up to 50 seconds while the service wakes up.
+
+---
+
+### Option 2 — Run Locally
+
+#### Prerequisites
+- Node.js (v18 or above)
+- npm
+
+#### 1. Extract the project
+Extract the ZIP file and open the folder in VS Code.
+
+#### 2. Install dependencies
+
+**Frontend:**
+```bash
+cd client
+npm install
+```
+
+**Backend:**
+```bash
+cd server
+npm install
+```
+
+#### 3. Set up environment variables
+Create a `.env` file inside the `server/` folder with the following:
+
+```env
+JWT_SECRET=your_jwt_secret
+SENDGRID_API_KEY=your_sendgrid_key
+FRONTEND_URL=http://localhost:3000
+NODE_ENV=development
+```
+
+#### 4. Start the backend
+```bash
+cd server
+node index.js
+```
+
+#### 5. Start the frontend
+```bash
+cd client
+npm start
+```
+
+The app will open at **http://localhost:3000**
 
 ---
 
@@ -156,4 +212,5 @@ Supervisor: Edita Gashi
 ---
 
 ## Licence
+
 This repository is provided for academic and educational purposes.
