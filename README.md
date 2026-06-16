@@ -1,5 +1,4 @@
-Here's the full updated README with the running instructions added:
-markdown# GreenGaps
+# GreenGaps
 ### A Web-Based Geospatial Decision-Support System for Urban Cycling Infrastructure
 
 GreenGaps is a full-stack web application developed as a final-year BSc Computing dissertation project at Southampton Solent University.
